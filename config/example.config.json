@@ -1,0 +1,22 @@
+{
+  "PORT": 3002,
+  "database": {
+    "username": "robingarg6626",
+    "password": "robingarg6626",
+    "databaseName": "admin"
+  },
+  "redisConnection": {
+    "port": 6379,
+    "hostname": "localhost"
+  },
+  "jwt": {
+    "secret": ""
+  },
+  "masterUserId": "",
+  "awsConfig": {
+    "accessKeyId": "",
+    "secretAccessKey": "",
+    "region": "",
+    "bucket": ""
+  }
+}
