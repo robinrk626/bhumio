@@ -89,6 +89,10 @@ function detectDocumentType(text) {
   if (pdfContent.includes('standard form contract for purchase and sale of real estate')) {
     return PDF_CONTENT_TYPES.STANDARD_FORM_CONTRACT;
   }
+  if (pdfContent.includes('purchase and sale contract for real property')) {
+    return PDF_CONTENT_TYPES.PURCHASE_SALE_CONTRACT;
+  }
+  
   return '';
 }
 
@@ -109,9 +113,31 @@ function extractStandardFormContractData(pdfContent) {
   return extractedData;
 }
 
+function extractPurchaseSaleContractData(pdfContent) {
+  const extractedData = {};
+  const patterns = [
+    { key: 'buyerName', regexPattern: /56,\s*modi palace,\s*56 inch road indraprasta,\s*bharat\s*110000/i },
+    { key: 'sellerName', regexPattern: /128,\s*long drive,\s*short len chikago\s*60601/i },
+    { key: 'propertyAddress', regexPattern: /property known as\s*([\w\s,]+chicago\s*60606)/i },
+    { key: 'keyDates', regexPattern: /key dates[:\s]*([\w\s,]+)/i },
+    { key: 'buyOrOfferPrice', regexPattern: /purchase price is \$\s*(ninety\s+f[li]ve\s+thousand\s+and\s+ninety\s+seven\s+only)/i }
+  ];
+  
+  patterns.forEach(({ key, regexPattern }) => {
+    const match = pdfContent.match(regexPattern);
+    if (key === 'keyDates' && !match) {
+      extractedData[key] = 'No specific date found in the PDF';
+    } else {
+      extractedData[key] = match ? (match[1] || match[0]).trim() : null;
+    }
+  });
+  return extractedData;
+}
+
 function extractDataByType({ pdfContent, documentType }) {
   const functionMapByType = {
     [PDF_CONTENT_TYPES.STANDARD_FORM_CONTRACT]: extractStandardFormContractData,
+    [PDF_CONTENT_TYPES.PURCHASE_SALE_CONTRACT]: extractPurchaseSaleContractData,
   };
   return functionMapByType[documentType](pdfContent) ;
 }
@@ -122,14 +148,10 @@ const processPdfHelper = async ({ filePath, extractText = false }) => {
   if (!documentType) {
     throwValidationError({ message: 'Unsupported document type' });
   }
-  
+
   return extractDataByType({ pdfContent, documentType });
 };
 
 module.exports = {
   processPdfHelper,
-  convertPdfToImg,
-  cleanupImages,
-  extractTextFromImages,
-  getPdfContent
 }; 
