@@ -56,11 +56,11 @@ const extractTextFromImages = async (images) => {
   const worker = await createWorker('eng');
   
   for (let i = 0; i < images.length; i++) {
-    const imagePath = images[i];    
+    const imagePath = images[i];
     const { data: { text } } = await worker.recognize(imagePath);
     combinedText += text;
   }
-  await worker.terminate();  
+  await worker.terminate();
   return { text: combinedText };
 };
 
@@ -71,7 +71,7 @@ const getPdfContent = async (pdfPath) => {
     if (!images || images.length === 0) {
       throwValidationError({ message: 'Failed to convert PDF to images' });
     }
-    
+
     const pdfFileName = path.basename(pdfPath, '.pdf');
     outputDir = path.join(process.cwd(), 'uploads', 'images', pdfFileName);
     return await extractTextFromImages(images);
@@ -92,7 +92,7 @@ function detectDocumentType(text) {
   if (pdfContent.includes('purchase and sale contract for real property')) {
     return PDF_CONTENT_TYPES.PURCHASE_SALE_CONTRACT;
   }
-  
+
   return '';
 }
 
@@ -103,12 +103,12 @@ function extractStandardFormContractData(pdfContent) {
     { key: 'sellerName', regexPattern: /SELLER[\s\S]{1,20}is\w+\s+(\w+)\s+/i },
     { key: 'propertyAddress', regexPattern: /known as[_\s]+([\w\s,\.]+)located/i },
     { key: 'keyDates', regexPattern: /(\d{2}\/\d{2}\/\d{4})/i },
-    { key: 'buyOrOfferPrice', regexPattern: /([Tt]wo\s+[Hh]undred\s+[Ee]ighty\s+[Ff]ive\s+[Tt]housand|285,000)/i },
+    { key: 'buyOrOfferPrice', regexPattern: /purchase price ie (.*?) dollars/i },
   ];
-  
+
   patterns.forEach(({ key, regexPattern }) => {
-      const match = pdfContent.match(regexPattern);
-      extractedData[key] = match ? match[1].trim() : null;
+    const match = pdfContent.match(regexPattern);
+    extractedData[key] = match ? match[1].trim() : null;
   });
   return extractedData;
 }
@@ -116,13 +116,10 @@ function extractStandardFormContractData(pdfContent) {
 function extractPurchaseSaleContractData(pdfContent) {
   const extractedData = {};
   const patterns = [
-    { key: 'buyerName', regexPattern: /56,\s*modi palace,\s*56 inch road indraprasta,\s*bharat\s*110000/i },
-    { key: 'sellerName', regexPattern: /128,\s*long drive,\s*short len chikago\s*60601/i },
-    { key: 'propertyAddress', regexPattern: /property known as\s*([\w\s,]+chicago\s*60606)/i },
+    { key: 'propertyAddress', regexPattern: /Property known as (.*?)\(City/ },
     { key: 'keyDates', regexPattern: /key dates[:\s]*([\w\s,]+)/i },
-    { key: 'buyOrOfferPrice', regexPattern: /purchase price is \$\s*(ninety\s+f[li]ve\s+thousand\s+and\s+ninety\s+seven\s+only)/i }
+    { key: 'buyOrOfferPrice', regexPattern: /The purchase price is \$ (.*?)(?=\. BUYER)/ }
   ];
-  
   patterns.forEach(({ key, regexPattern }) => {
     const match = pdfContent.match(regexPattern);
     if (key === 'keyDates' && !match) {
@@ -131,6 +128,13 @@ function extractPurchaseSaleContractData(pdfContent) {
       extractedData[key] = match ? (match[1] || match[0]).trim() : null;
     }
   });
+
+  const buyerAndSellerNameRegex = /Seller Name\s+Buyer Name\s+([\w\s,]+?\s\d{5})\s+([\w\s,]+?\s\d{6})/;
+  const match = pdfContent.match(buyerAndSellerNameRegex);
+  if (match) {
+    extractedData.sellerName = match[1].trim();
+    extractedData.buyerName = match[2].trim();
+  }
   return extractedData;
 }
 
@@ -139,7 +143,7 @@ function extractDataByType({ pdfContent, documentType }) {
     [PDF_CONTENT_TYPES.STANDARD_FORM_CONTRACT]: extractStandardFormContractData,
     [PDF_CONTENT_TYPES.PURCHASE_SALE_CONTRACT]: extractPurchaseSaleContractData,
   };
-  return functionMapByType[documentType](pdfContent) ;
+  return functionMapByType[documentType](pdfContent);
 }
 
 const processPdfHelper = async ({ filePath, extractText = false }) => {
