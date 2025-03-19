@@ -54,7 +54,7 @@ const cleanupImages = (directory) => {
 const extractTextFromImages = async (images) => {
   let combinedText = '';
   const worker = await createWorker('eng');
-  
+
   for (let i = 0; i < images.length; i++) {
     const imagePath = images[i];
     const { data: { text } } = await worker.recognize(imagePath);
@@ -122,11 +122,7 @@ function extractPurchaseSaleContractData(pdfContent) {
   ];
   patterns.forEach(({ key, regexPattern }) => {
     const match = pdfContent.match(regexPattern);
-    if (key === 'keyDates' && !match) {
-      extractedData[key] = 'No specific date found in the PDF';
-    } else {
-      extractedData[key] = match ? (match[1] || match[0]).trim() : null;
-    }
+    extractedData[key] = match ? (match[1] || match[0]).trim() : 'Not Found';
   });
 
   const buyerAndSellerNameRegex = /Seller Name\s+Buyer Name\s+([\w\s,]+?\s\d{5})\s+([\w\s,]+?\s\d{6})/;
