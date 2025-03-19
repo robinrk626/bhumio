@@ -108,7 +108,7 @@ function extractStandardFormContractData(pdfContent) {
 
   patterns.forEach(({ key, regexPattern }) => {
     const match = pdfContent.match(regexPattern);
-    extractedData[key] = match ? match[1].trim() : null;
+    extractedData[key] = match ? match[1].trim() : 'Not Found';
   });
   return extractedData;
 }
