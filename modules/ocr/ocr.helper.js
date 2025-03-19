@@ -54,13 +54,12 @@ const cleanupImages = (directory) => {
 const extractTextFromImages = async (images) => {
   let combinedText = '';
   const worker = await createWorker('eng');
-
-  for (let i = 0; i < images.length; i++) {
-    const imagePath = images[i];
-    const { data: { text } } = await worker.recognize(imagePath);
-    combinedText += text;
-  }
+  const promises = images.map((imagePath) => worker.recognize(imagePath));
+  const imageTexts = await Promise.all(promises);
   await worker.terminate();
+  imageTexts.forEach(({ data: { text } }) => {
+    combinedText += text;
+  })
   return { text: combinedText };
 };
 
